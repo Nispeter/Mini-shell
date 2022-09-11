@@ -18,7 +18,7 @@ class MiniShell{
 
 		void printPromt();
 		void signalManager();
-		void getCommand();
+		bool getCommand();
 		void execCommand();
 		void listen();
 

@@ -18,9 +18,12 @@ void MiniShell::printPromt(){
 
 void MiniShell::signalManager(){}
 
-void MiniShell::getCommand(){
+bool MiniShell::getCommand(){
 	signalManager();
 	getline(cin,token);
+
+	if(token == "")
+		return false;
 
 	string aux;
 	stringstream c(token);
@@ -39,6 +42,7 @@ void MiniShell::getCommand(){
 		i++;
 	}
 	args[i-1] = NULL;
+	return true;
 }
 
 void MiniShell::execCommand(){
@@ -58,13 +62,14 @@ void MiniShell::execCommand(){
 }
 
 void MiniShell::listen(){
-	clear();			//limpiar consola
+	clear();					//limpiar consola
 	while(1){
-		printPromt();		//imprimir el prompt duh
-		getCommand();		//getline y parse
-		execCommand();		//fork y exec
-		//printLine();		//print for debugging
-		//sleep(2);			// ¯\_('-')_/¯
+		printPromt();			//imprimir el prompt duh
+		if(getCommand()){		//getline y parse
+			execCommand();		//fork y exec
+			//printLine();		//print for debugging
+			//sleep(2);			// ¯\_('-')_/¯
+		}
 	}
 }
 
