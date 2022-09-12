@@ -50,6 +50,8 @@ bool MiniShell::getCommand(){
 	} else if (strcmp(fun, "cd") == 0) {
 		// OPCIONAL: Agregar la funcionalidad de cd.
 		// (Preferiblemente en una funcion aparte.)
+		chdir(args[0]);
+
 		return false;
 	} 
 
