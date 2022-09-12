@@ -1,5 +1,5 @@
 #include <iostream>
-#include "mini-shell.cpp"
+#include "mini-shell.h"
 
 using namespace std;
 

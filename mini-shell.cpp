@@ -42,6 +42,17 @@ bool MiniShell::getCommand(){
 		i++;
 	}
 	args[i-1] = NULL;
+
+	// No se si es el mejor lugar, pero voy a probar aqui por mientras. 
+
+	if (strcmp(fun, "exit") == 0) {
+		exit(0);
+	} else if (strcmp(fun, "cd") == 0) {
+		// OPCIONAL: Agregar la funcionalidad de cd.
+		// (Preferiblemente en una funcion aparte.)
+		return false;
+	} 
+
 	return true;
 }
 
