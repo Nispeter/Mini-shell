@@ -40,7 +40,7 @@ bool MiniShell::getCommand(){
 
 	// MOVER ESTO A EXEC COMAND
 
-	strcpy(fun,inputW[0]); 
+	strcpy(fun,inputW[0]);
 
 	if (strcmp(fun, "exit") == 0) {
 		exit(0);
@@ -81,6 +81,7 @@ void MiniShell::execCommand(){
 		}
 		else if(!strcmp(inputW[i],"|")){
 
+
 		}
 		else{
 			args[argCount] = inputW[i];
@@ -97,8 +98,14 @@ void MiniShell::execCommand(){
 		if(pid < 0)
 			cerr<<"failed to create a child"<<endl;
 		else if(pid == 0){
+			cout<<fun<<endl;
+			for (int i = 0; i < argCount; ++i)
+			{
+				cout<<args[i]<<endl;
+			}
 			if(execvp(fun,args) < 0){
-				cerr<<"failed to execute"<<endl;
+				if(errno == ENOENT)cerr<<"El comando no existe"<<endl;
+				else cerr<<strerror(errno)<<endl;
 			}
 		}
 		else
