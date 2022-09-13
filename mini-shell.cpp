@@ -30,27 +30,24 @@ bool MiniShell::getCommand(){
 	argn = 0;
 
 	int i = 0;
-	while(getline(c,aux, ' ')){
-		if(i == 0)
-			strcpy(fun,aux.c_str());
-		else{							//esto esta re cursed OPTIMIZAR convercion de string a array of pointers of chars
-			argn++;
-			const char *tempConv = aux.c_str();
-			args[i-1] = (char*)malloc(strlen(tempConv)+1);	//no se donde poner el free, kinda sus
-			strcpy(args[i-1],tempConv);
-		}
+	while(getline(c,aux, ' ')){	//esto esta re cursed OPTIMIZAR convercion de string a array of pointers of chars
+		argn++;
+		const char *tempConv = aux.c_str();
+		inputW[i] = (char*)malloc(strlen(tempConv)+1);	//no se donde poner el free, kinda sus
+		strcpy(inputW[i],tempConv);
 		i++;
 	}
-	args[i-1] = NULL;
 
-	// No se si es el mejor lugar, pero voy a probar aqui por mientras. 
+	// MOVER ESTO A EXEC COMAND
+
+	strcpy(fun,inputW[0]); 
 
 	if (strcmp(fun, "exit") == 0) {
 		exit(0);
 	} else if (strcmp(fun, "cd") == 0) {
 		// OPCIONAL: Agregar la funcionalidad de cd.
 		// (Preferiblemente en una funcion aparte.)
-		chdir(args[0]);
+		chdir(inputW[1]);
 
 		return false;
 	} 
@@ -58,7 +55,7 @@ bool MiniShell::getCommand(){
 	return true;
 }
 
-void MiniShell::execCommand(){
+/*void MiniShell::execCommand(){
 	pid_t pid = fork();
 	int responsePid;
 
@@ -72,7 +69,43 @@ void MiniShell::execCommand(){
 	else {
 		wait(NULL);
 	}
+}*/
+
+void MiniShell::execCommand(){
+	int i = 0, argCount=0;
+	bool func = true, piped = false; 
+	while(i != argn){
+		if(func){
+			strcpy(fun,inputW[i]);
+			func = false;
+		}
+		else if(!strcmp(inputW[i],"|")){
+
+		}
+		else{
+			args[argCount] = inputW[i];
+			argCount++;
+		}
+		i++;
+	}
+	args[argCount] = NULL;
+	if(piped){
+
+	}
+	else{
+		pid_t pid = fork();
+		if(pid < 0)
+			cerr<<"failed to create a child"<<endl;
+		else if(pid == 0){
+			if(execvp(fun,args) < 0){
+				cerr<<"failed to execute"<<endl;
+			}
+		}
+		else
+			wait(NULL);
+	}
 }
+
 
 void MiniShell::listen(){
 	clear();					//limpiar consola

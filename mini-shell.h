@@ -12,6 +12,7 @@ using namespace std;
 class MiniShell{
 	private:
 		char fun[100];			
+		char* inputW[25];
 		char* args[20];			
 		int argn;			
 		string token; 			 
