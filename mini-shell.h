@@ -22,6 +22,7 @@ class MiniShell{
 		bool getCommand();
 		void execCommand();
 		void listen();
+		void pipeExec();
 
 	public:
 		MiniShell();

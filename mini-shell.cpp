@@ -71,39 +71,95 @@ bool MiniShell::getCommand(){
 	}
 }*/
 
+void MiniShell::pipeExec(){
+		
+}
+
+
 void MiniShell::execCommand(){
-	int i = 0, argCount=0;
-	bool func = true, piped = false; 
+	int fd[2][2];
+	int i = 0, argCount=0,activePipe = 0;
+	bool piped = false; 
 	while(i != argn){
-		if(func){
-			strcpy(fun,inputW[i]);
-			func = false;
-		}
-		else if(!strcmp(inputW[i],"|")){
+		if(!strcmp(inputW[i],"|")){//PIPE
+			if(piped){
+				if(pipe(fd[(activePipe+1)%2]) == -1)cout<<"ERROR EN SEGUND PIPE"<<endl;
+				int pidPipe = fork();
+				if(pidPipe < 0)cout<<"ERROR EN FORK"<<endl;
+				if(pidPipe == 0){//child
+					dup2(fd[activePipe][0], STDIN_FILENO);
+					close(fd[activePipe][0]);
+					close(fd[activePipe][1]);
+					dup2(fd[(activePipe+1)%2][1], STDOUT_FILENO);
+					close(fd[(activePipe+1)%2][0]);
+					close(fd[(activePipe+1)%2][1]);
+					args[argCount] = NULL;
+					cout<<"\0";
+					if(execvp(args[0],args) < 0){
+						if(errno == ENOENT)cerr<<"El comando no existe"<<endl;
+						else cerr<<strerror(errno)<<endl;
+					}
+				}
+				close(fd[activePipe][1]);
+				close(fd[activePipe][0]);
+				activePipe = (activePipe+1)%2;
+				wait(NULL);
+				argCount = 0;
+			}
+			else {
+				if(pipe(fd[activePipe]) == -1)return;
+				int pidPipe = fork();
+				if(pidPipe < 0)return;
+				if(pidPipe == 0){//child
+					dup2(fd[activePipe][1], STDOUT_FILENO);
+					close(fd[activePipe][0]);
+					close(fd[activePipe][1]);
+					args[argCount] = NULL;
+					if(execvp(args[0],args) < 0){
+						if(errno == ENOENT)cerr<<"El comando no existe"<<endl;
+						else cerr<<strerror(errno)<<endl;
+					}
+				}
+				wait(NULL);
+				argCount = 0;
+				piped = true;
 
+			}
 
 		}
-		else{
+		else{//SE AGREG ARGUMENTO
 			args[argCount] = inputW[i];
 			argCount++;
 		}
 		i++;
 	}
+	//ULTIMO COMANDO A EJECUTAR
 	args[argCount] = NULL;
 	if(piped){
-
+		pid_t pid = fork();
+		if(pid < 0)
+			cerr<<"failed to create a child"<<endl;
+		else if(pid == 0){
+			dup2(fd[activePipe][0], STDIN_FILENO);
+			close(fd[activePipe][0]);
+			close(fd[activePipe][1]);
+			if(execvp(args[0],args) < 0){
+				if(errno == ENOENT)cerr<<"El comando no existe"<<endl;
+				else cerr<<strerror(errno)<<endl;
+			}
+		}
+		else{
+			close(fd[activePipe][1]);
+			close(fd[activePipe][0]);
+			wait(NULL);
+		}
 	}
 	else{
 		pid_t pid = fork();
 		if(pid < 0)
 			cerr<<"failed to create a child"<<endl;
 		else if(pid == 0){
-			cout<<fun<<endl;
-			for (int i = 0; i < argCount; ++i)
-			{
-				cout<<args[i]<<endl;
-			}
-			if(execvp(fun,args) < 0){
+			if(execvp(args[0],args) < 0){
 				if(errno == ENOENT)cerr<<"El comando no existe"<<endl;
 				else cerr<<strerror(errno)<<endl;
 			}
