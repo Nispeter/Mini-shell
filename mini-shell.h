@@ -2,10 +2,13 @@
 #include <unistd.h>
 #include <string>
 #include <sstream>
+#include <ios>
+#include <fstream>
 #include <cstring>
 #include <algorithm>
 #include <sys/types.h>
 #include <sys/wait.h>
+#include <sys/resource.h>
 
 using namespace std;
 
@@ -15,7 +18,12 @@ class MiniShell{
 		char* inputW[25];
 		char* args[20];			
 		int argn;			
-		string token; 			 
+		string token;
+		// Cosas de perf
+		string perf;
+		string log_filename;
+		bool uso;
+		struct rusage start, end;			 
 
 		void printPromt();
 		void signalManager();
@@ -23,6 +31,7 @@ class MiniShell{
 		void execCommand();
 		void listen();
 		void pipeExec();
+		void appendPerf();
 
 	public:
 		MiniShell();

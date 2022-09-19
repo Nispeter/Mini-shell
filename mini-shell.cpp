@@ -50,7 +50,23 @@ bool MiniShell::getCommand(){
 		chdir(inputW[1]);
 
 		return false;
-	} 
+	} else if (strcmp(fun, "usorecursos") == 0) {
+		if (strcmp(inputW[1], "start") == 0) {
+			uso = true;
+
+			string aux(inputW[2]);
+			log_filename = aux; 
+
+			ofstream log(log_filename, ios_base::app | ios_base::out);
+
+			log << "comando" << "\t" << "tuser" << "\t" << "tsys" << "\t" << "maxrss" << endl;
+			log.close();
+		} else {
+			uso = false;
+		}
+
+		return false;
+	}
 
 	return true;
 }
@@ -175,15 +191,29 @@ void MiniShell::listen(){
 	while(1){
 		printPromt();			//imprimir el prompt duh
 		if(getCommand()){		//getline y parse
+			if (uso) getrusage(RUSAGE_CHILDREN, &start); 
 			execCommand();		//fork y exec
-			//printLine();		//print for debugging
-			//sleep(2);			// ¯\_('-')_/¯
+			if (uso) {
+				getrusage(RUSAGE_CHILDREN, &end);
+				appendPerf();
+			}
 		}
 	}
 }
 
+void MiniShell::appendPerf() {
+	ofstream log(log_filename, ios_base::app | ios_base::out);
+	string name(fun);
+	long tuser = ((end.ru_utime.tv_sec - start.ru_utime.tv_sec) * 1000) + ((end.ru_utime.tv_usec - start.ru_utime.tv_usec) / 1000); 
+	long tsys = ((end.ru_stime.tv_sec - start.ru_stime.tv_sec) * 1000) + ((end.ru_stime.tv_usec - start.ru_stime.tv_usec) / 1000); 
+	log << name << "\t" << tuser << "ms\t" << tsys << "ms\t" << start.ru_maxrss << endl;
+	log.close();
+}
+
+
 //PUBLIC METHODS
 MiniShell::MiniShell(){
+	uso = false;
 	listen();
 }
 
