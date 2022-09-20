@@ -16,10 +16,8 @@ void MiniShell::printPromt(){
 	cout<<promtA<<promtB;
 }
 
-void MiniShell::signalManager(){}
-
 bool MiniShell::getCommand(){
-	signalManager();
+	//signalManager();
 	getline(cin,token);
 
 	if(token == "")
@@ -210,9 +208,41 @@ void MiniShell::appendPerf() {
 	log.close();
 }
 
+void signalManager(int sigID){
+	switch(sigID){
+		case SIGUSR1: 
+			cerr<<("custom signal 1 activated\n")<<endl;
+			break;
+        case SIGUSR2:
+            cerr<<("custom signal 2 activated\n")<<endl;
+            break;
+        case SIGINT:
+        	cerr<<"\nDesea cerrar mini-shell? (y/n): ";
+        	char c[2];
+        	cin>>c;
+        	if(c[0] != 'y'){
+        		signal(SIGINT, SIG_DFL);
+        		signal(sigID, SIG_DFL);
+        		sleep(1);
+        		break;
+        	}
+            cerr<<"Cerrando programa...\n";
+            exit(1);
+            break;
+        default:
+            break;
+	}
+}
+
 
 //PUBLIC METHODS
 MiniShell::MiniShell(){
+	struct sigaction sa;
+	sa.sa_handler = signalManager;
+	sigaction(SIGINT, &sa, NULL);
+	sigaction(SIGUSR1, &sa, NULL);
+	sigaction(SIGUSR2, &sa, NULL);
+
 	uso = false;
 	listen();
 }

@@ -1,6 +1,7 @@
 #include <iostream>
 #include <unistd.h>
 #include <string>
+#include <signal.h>
 #include <sstream>
 #include <ios>
 #include <fstream>
@@ -26,7 +27,6 @@ class MiniShell{
 		struct rusage start, end;			 
 
 		void printPromt();
-		void signalManager();
 		bool getCommand();
 		void execCommand();
 		void listen();
