@@ -209,24 +209,22 @@ void MiniShell::appendPerf() {
 }
 
 void signalManager(int sigID){
+	string c;
 	switch(sigID){
 		case SIGUSR1: 
-			cerr<<("custom signal 1 activated\n")<<endl;
+			write(STDOUT_FILENO, "custom signal 1 activated\n",13);
 			break;
         case SIGUSR2:
-            cerr<<("custom signal 2 activated\n")<<endl;
+            write(STDOUT_FILENO, "custom signal 2 activated\n",13);
             break;
         case SIGINT:
-        	cerr<<"\nDesea cerrar mini-shell? (y/n): ";
-        	char c[2];
-        	cin>>c;
-        	if(c[0] != 'y'){
-        		signal(SIGINT, SIG_DFL);
-        		signal(sigID, SIG_DFL);
-        		sleep(1);
+        	write(STDOUT_FILENO, "\nAre you sure you want to close mini-shell? (y/n): ",52);
+        	getline(cin,c);
+        	if(c != "y"){
         		break;
         	}
-            cerr<<"Cerrando programa...\n";
+        	write(STDOUT_FILENO, "closing program...\n",20);
+            //cerr<<"Closign program...\n";
             exit(1);
             break;
         default:
@@ -237,11 +235,9 @@ void signalManager(int sigID){
 
 //PUBLIC METHODS
 MiniShell::MiniShell(){
-	struct sigaction sa;
-	sa.sa_handler = signalManager;
-	sigaction(SIGINT, &sa, NULL);
-	sigaction(SIGUSR1, &sa, NULL);
-	sigaction(SIGUSR2, &sa, NULL);
+	signal(SIGINT, signalManager);
+	signal(SIGUSR1,signalManager);
+	signal(SIGUSR2, signalManager);
 
 	uso = false;
 	listen();
