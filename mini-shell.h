@@ -30,8 +30,8 @@ class MiniShell{
 		bool getCommand();
 		void execCommand();
 		void listen();
-		void pipeExec();
 		void appendPerf();
+		void freeMem();
 
 	public:
 		MiniShell();

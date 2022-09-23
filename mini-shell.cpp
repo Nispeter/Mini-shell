@@ -2,7 +2,12 @@
 
 using namespace std;
 
-#define clear() printf("\033[H\033[J") 
+#define clear_c() printf("\033[H\033[J") 
+
+
+void pipeExec(int sigID){
+	exit(1);
+}
 
 //PRIVATE METHODS
 void MiniShell::printPromt(){
@@ -18,7 +23,11 @@ void MiniShell::printPromt(){
 
 bool MiniShell::getCommand(){
 	//signalManager();
+	cin.clear();
+	fflush(stdin);
 	getline(cin,token);
+	fflush(stdin);
+	cin.clear();
 
 	if(token == "")
 		return false;
@@ -29,11 +38,14 @@ bool MiniShell::getCommand(){
 
 	int i = 0;
 	while(getline(c,aux, ' ')){	//esto esta re cursed OPTIMIZAR convercion de string a array of pointers of chars
+		
 		argn++;
 		const char *tempConv = aux.c_str();
 		inputW[i] = (char*)malloc(strlen(tempConv)+1);	//no se donde poner el free, kinda sus
 		strcpy(inputW[i],tempConv);
 		i++;
+		fflush(stdin);
+		cin.clear();
 	}
 
 	// MOVER ESTO A EXEC COMAND
@@ -70,127 +82,153 @@ bool MiniShell::getCommand(){
 }
 
 /*void MiniShell::execCommand(){
-	pid_t pid = fork();
-	int responsePid;
+	int execPid = fork();
+	if (execPid == 0){
+		struct sigaction sa;
+		sa.sa_handler = pipeExec;
+		//int temp = sigemptyset(&sa.sa_mask);
+		sa.sa_flags = 0;
+		sigaction(SIGINT, &sa, NULL);
+			
+		inputW[argn] = NULL;
+		pid_t pid = fork();
 
-	if(pid < 0)
-		cerr<<"failed to create child"<<endl;
-	else if(pid == 0){
-		responsePid = execvp(fun,args);
-		if(responsePid < 0)
-			cerr<<"failed to execute program"<<endl;
+		int responsePid;
+
+		if(pid < 0)
+			write(STDOUT_FILENO,"failed to create child\n",23);
+		else if(pid == 0){
+
+			responsePid = execvp(inputW[0],inputW);
+			if(responsePid < 0)
+				write(STDOUT_FILENO,"a\n",2);
+		}
+		else {
+			wait(NULL);
+		}
 	}
-	else {
-		wait(NULL);
-	}
+	wait(NULL);
 }*/
 
-void MiniShell::pipeExec(){
-		
-}
 
 
 void MiniShell::execCommand(){
-	int fd[2][2];
-	int i = 0, argCount=0,activePipe = 0;
-	bool piped = false; 
-	while(i != argn){
-		if(!strcmp(inputW[i],"|")){//PIPE
-			if(piped){
-				if(pipe(fd[(activePipe+1)%2]) == -1)cout<<"ERROR EN SEGUND PIPE"<<endl;
-				int pidPipe = fork();
-				if(pidPipe < 0)cout<<"ERROR EN FORK"<<endl;
-				if(pidPipe == 0){//child
-					dup2(fd[activePipe][0], STDIN_FILENO);
-					close(fd[activePipe][0]);
-					close(fd[activePipe][1]);
-					dup2(fd[(activePipe+1)%2][1], STDOUT_FILENO);
-					close(fd[(activePipe+1)%2][0]);
-					close(fd[(activePipe+1)%2][1]);
-					args[argCount] = NULL;
-					cout<<"\0";
-					if(execvp(args[0],args) < 0){
-						if(errno == ENOENT)cerr<<"El comando no existe"<<endl;
-						else cerr<<strerror(errno)<<endl;
+	int execPid = fork();
+	if(execPid == 0){
+		struct sigaction sa;
+		sa.sa_handler = pipeExec;
+		//int temp = sigemptyset(&sa.sa_mask);
+		sa.sa_flags = 0;
+		sigaction(SIGINT, &sa, NULL);
+		int fd[2][2];
+		int i = 0, argCount=0,activePipe = 0;
+		bool piped = false; 
+		while(i != argn){
+			if(!strcmp(inputW[i],"|")){//PIPE
+				if(piped){
+					if(pipe(fd[(activePipe+1)%2]) == -1)cout<<"ERROR EN SEGUND PIPE"<<endl;
+					int pidPipe = fork();
+					if(pidPipe < 0)cout<<"ERROR EN FORK"<<endl;
+					if(pidPipe == 0){//child
+						dup2(fd[activePipe][0], STDIN_FILENO);
+						close(fd[activePipe][0]);
+						close(fd[activePipe][1]);
+						dup2(fd[(activePipe+1)%2][1], STDOUT_FILENO);
+						close(fd[(activePipe+1)%2][0]);
+						close(fd[(activePipe+1)%2][1]);
+						args[argCount] = NULL;
+						cout<<"\0";
+						if(execvp(args[0],args) < 0){
+							if(errno == ENOENT)cerr<<"El comando no existe"<<endl;
+							else cerr<<strerror(errno)<<endl;
+						}
 					}
+					close(fd[activePipe][1]);
+					close(fd[activePipe][0]);
+					activePipe = (activePipe+1)%2;
+					wait(NULL);
+					argCount = 0;
 				}
+				else {
+					if(pipe(fd[activePipe]) == -1)return;
+					int pidPipe = fork();
+					if(pidPipe < 0)return;
+					if(pidPipe == 0){//child
+						dup2(fd[activePipe][1], STDOUT_FILENO);
+						close(fd[activePipe][0]);
+						close(fd[activePipe][1]);
+						args[argCount] = NULL;
+						if(execvp(args[0],args) < 0){
+							if(errno == ENOENT)cerr<<"El comando no existe"<<endl;
+							else cerr<<strerror(errno)<<endl;
+						}
+					}
+					wait(NULL);
+					argCount = 0;
+					piped = true;
+
+				}
+
+			}
+			else{//SE AGREG ARGUMENTO
+				args[argCount] = inputW[i];
+				argCount++;
+			}
+			i++;
+		}
+		//ULTIMO COMANDO A EJECUTAR
+		args[argCount] = NULL;
+		if(piped){
+			pid_t pid = fork();
+			if(pid < 0)
+				cerr<<"failed to create a child"<<endl;
+			else if(pid == 0){
+				dup2(fd[activePipe][0], STDIN_FILENO);
+				close(fd[activePipe][0]);
+				close(fd[activePipe][1]);
+				if(execvp(args[0],args) < 0){
+					if(errno == ENOENT)cerr<<"El comando no existe"<<endl;
+					else cerr<<strerror(errno)<<endl;
+				}
+			}
+			else{
 				close(fd[activePipe][1]);
 				close(fd[activePipe][0]);
-				activePipe = (activePipe+1)%2;
 				wait(NULL);
-				argCount = 0;
-			}
-			else {
-				if(pipe(fd[activePipe]) == -1)return;
-				int pidPipe = fork();
-				if(pidPipe < 0)return;
-				if(pidPipe == 0){//child
-					dup2(fd[activePipe][1], STDOUT_FILENO);
-					close(fd[activePipe][0]);
-					close(fd[activePipe][1]);
-					args[argCount] = NULL;
-					if(execvp(args[0],args) < 0){
-						if(errno == ENOENT)cerr<<"El comando no existe"<<endl;
-						else cerr<<strerror(errno)<<endl;
-					}
-				}
-				wait(NULL);
-				argCount = 0;
-				piped = true;
-
-			}
-
-		}
-		else{//SE AGREG ARGUMENTO
-			args[argCount] = inputW[i];
-			argCount++;
-		}
-		i++;
-	}
-	//ULTIMO COMANDO A EJECUTAR
-	args[argCount] = NULL;
-	if(piped){
-		pid_t pid = fork();
-		if(pid < 0)
-			cerr<<"failed to create a child"<<endl;
-		else if(pid == 0){
-			dup2(fd[activePipe][0], STDIN_FILENO);
-			close(fd[activePipe][0]);
-			close(fd[activePipe][1]);
-			if(execvp(args[0],args) < 0){
-				if(errno == ENOENT)cerr<<"El comando no existe"<<endl;
-				else cerr<<strerror(errno)<<endl;
 			}
 		}
 		else{
-			close(fd[activePipe][1]);
-			close(fd[activePipe][0]);
-			wait(NULL);
-		}
-	}
-	else{
-		pid_t pid = fork();
-		if(pid < 0)
-			cerr<<"failed to create a child"<<endl;
-		else if(pid == 0){
-			if(execvp(args[0],args) < 0){
-				if(errno == ENOENT)cerr<<"El comando no existe"<<endl;
-				else cerr<<strerror(errno)<<endl;
+			pid_t pid = fork();
+			if(pid < 0)
+				cerr<<"failed to create a child"<<endl;
+			else if(pid == 0){
+				if(execvp(args[0],args) < 0){
+					if(errno == ENOENT)cerr<<"El comando no existe"<<endl;
+					else cerr<<strerror(errno)<<endl;
+				}
 			}
+			else
+				wait(NULL);
 		}
-		else
-			wait(NULL);
 	}
+	wait(NULL);
+	cerr<<"TERMINA"<<endl;
+}
+
+void MiniShell::freeMem(){
+	for (int i = 0; i < argn; ++i)free(inputW[i]);
 }
 
 
 void MiniShell::listen(){
-	clear();					//limpiar consola
+	clear_c();					//limpiar consola
 	while(1){
 		printPromt();			//imprimir el prompt duh
-		if(getCommand()){		//getline y parse
+		if(getCommand()){
+			//continue;		//getline y parse
 			if (uso) getrusage(RUSAGE_CHILDREN, &start); 
 			execCommand();		//fork y exec
+			freeMem();
 			if (uso) {
 				getrusage(RUSAGE_CHILDREN, &end);
 				appendPerf();
@@ -218,26 +256,36 @@ void signalManager(int sigID){
             write(STDOUT_FILENO, "custom signal 2 activated\n",13);
             break;
         case SIGINT:
+        	cin.clear();
+        	fflush(stdin);
         	write(STDOUT_FILENO, "\nAre you sure you want to close mini-shell? (y/n): ",52);
         	getline(cin,c);
+        	cin.clear();
         	if(c != "y"){
         		break;
         	}
+        	signal(SIGINT, SIG_DFL);
         	write(STDOUT_FILENO, "closing program...\n",20);
-            //cerr<<"Closign program...\n";
             exit(1);
             break;
         default:
             break;
 	}
+	
 }
 
 
 //PUBLIC METHODS
 MiniShell::MiniShell(){
-	signal(SIGINT, signalManager);
-	signal(SIGUSR1,signalManager);
-	signal(SIGUSR2, signalManager);
+	struct sigaction sa;
+	sa.sa_handler = signalManager;
+	//int temp = sigemptyset(&sa.sa_mask);
+	sa.sa_flags = 0;
+	sigaction(SIGINT, &sa, NULL);
+	//solo funciona cuando se sale del mini-shell una vez antes!!!???
+	//sigaction(SIGUSR1, &sa, NULL);
+	//sigaction(SIGUSR2, &sa, NULL);
+
 
 	uso = false;
 	listen();
