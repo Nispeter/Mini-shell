@@ -114,7 +114,9 @@ bool MiniShell::getCommand(){
 
 void MiniShell::execCommand(){
 	int execPid = fork();
-	if(execPid == 0){
+	if(execPid < 0)
+		cerr<<"failed to create a child"<<endl;
+	else if(execPid == 0){
 		struct sigaction sa;
 		sa.sa_handler = pipeExec;
 		//int temp = sigemptyset(&sa.sa_mask);
@@ -128,8 +130,9 @@ void MiniShell::execCommand(){
 				if(piped){
 					if(pipe(fd[(activePipe+1)%2]) == -1)cout<<"ERROR EN SEGUND PIPE"<<endl;
 					int pidPipe = fork();
-					if(pidPipe < 0)cout<<"ERROR EN FORK"<<endl;
-					if(pidPipe == 0){//child
+					if(pidPipe < 0)
+						cerr<<"failed to create a child"<<endl;
+					else if(pidPipe == 0){//child
 						dup2(fd[activePipe][0], STDIN_FILENO);
 						close(fd[activePipe][0]);
 						close(fd[activePipe][1]);
@@ -150,9 +153,10 @@ void MiniShell::execCommand(){
 					argCount = 0;
 				}
 				else {
-					if(pipe(fd[activePipe]) == -1)return;
+					if(pipe(fd[activePipe]) == -1)cerr<<"error en pipe"<<endl;
 					int pidPipe = fork();
-					if(pidPipe < 0)return;
+					if(pidPipe < 0)
+						cerr<<"failed to create a child"<<endl;
 					if(pidPipe == 0){//child
 						dup2(fd[activePipe][1], STDOUT_FILENO);
 						close(fd[activePipe][0]);
@@ -210,9 +214,10 @@ void MiniShell::execCommand(){
 			else
 				wait(NULL);
 		}
+		exit(1);
 	}
-	wait(NULL);
-	cerr<<"TERMINA"<<endl;
+	else 
+		wait(NULL);
 }
 
 void MiniShell::freeMem(){
@@ -261,6 +266,7 @@ void signalManager(int sigID){
         	write(STDOUT_FILENO, "\nAre you sure you want to close mini-shell? (y/n): ",52);
         	getline(cin,c);
         	cin.clear();
+        	fflush(stdin);
         	if(c != "y"){
         		break;
         	}
@@ -283,8 +289,8 @@ MiniShell::MiniShell(){
 	sa.sa_flags = 0;
 	sigaction(SIGINT, &sa, NULL);
 	//solo funciona cuando se sale del mini-shell una vez antes!!!???
-	//sigaction(SIGUSR1, &sa, NULL);
-	//sigaction(SIGUSR2, &sa, NULL);
+	sigaction(SIGUSR1, &sa, NULL);
+	sigaction(SIGUSR2, &sa, NULL);
 
 
 	uso = false;
