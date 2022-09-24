@@ -144,6 +144,7 @@ void MiniShell::execCommand(){
 						if(execvp(args[0],args) < 0){
 							if(errno == ENOENT)cerr<<"El comando no existe"<<endl;
 							else cerr<<strerror(errno)<<endl;
+							exit(1);
 						}
 					}
 					close(fd[activePipe][1]);
@@ -165,6 +166,7 @@ void MiniShell::execCommand(){
 						if(execvp(args[0],args) < 0){
 							if(errno == ENOENT)cerr<<"El comando no existe"<<endl;
 							else cerr<<strerror(errno)<<endl;
+							exit(1);
 						}
 					}
 					wait(NULL);
@@ -193,6 +195,7 @@ void MiniShell::execCommand(){
 				if(execvp(args[0],args) < 0){
 					if(errno == ENOENT)cerr<<"El comando no existe"<<endl;
 					else cerr<<strerror(errno)<<endl;
+					exit(1);
 				}
 			}
 			else{
@@ -209,6 +212,7 @@ void MiniShell::execCommand(){
 				if(execvp(args[0],args) < 0){
 					if(errno == ENOENT)cerr<<"El comando no existe"<<endl;
 					else cerr<<strerror(errno)<<endl;
+					exit(1);
 				}
 			}
 			else
