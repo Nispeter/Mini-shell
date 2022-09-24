@@ -60,6 +60,34 @@ bool MiniShell::getCommand(){
 		chdir(inputW[1]);
 
 		return false;
+	} else if (strcmp(fun, "sigur1") == 0){
+		int pid = fork();
+			
+		if(pid == 0){
+		pid_t parent = getpid();
+		write(STDOUT_FILENO, "Sending custom signal 1\n",25);
+		kill(parent, SIGUSR1);
+		sleep(2);
+		exit(0);
+		}
+		else {
+			wait(NULL);
+			return false;
+		}
+	} else if (strcmp(fun, "sigur2") == 0){
+		int pid = fork();
+		if(pid == 0){
+			pid_t parent = getpid();
+			write(STDOUT_FILENO, "Sending custom signal 2\n",25);
+			kill(parent, SIGUSR2);
+			sleep(2);
+			exit(0);
+		}
+		else {
+			wait(NULL);
+			return false;
+		}
+		
 	} else if (strcmp(fun, "usorecursos") == 0) {
 		if (strcmp(inputW[1], "start") == 0) {
 			uso = true;
@@ -259,10 +287,10 @@ void signalManager(int sigID){
 	string c;
 	switch(sigID){
 		case SIGUSR1: 
-			write(STDOUT_FILENO, "custom signal 1 activated\n",13);
+			write(STDOUT_FILENO, "Custom signal 1 activated\n",27);
 			break;
         case SIGUSR2:
-            write(STDOUT_FILENO, "custom signal 2 activated\n",13);
+            write(STDOUT_FILENO, "Custom signal 2 activated\n",27);
             break;
         case SIGINT:
         	cin.clear();
