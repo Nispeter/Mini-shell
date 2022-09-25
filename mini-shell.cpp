@@ -109,41 +109,10 @@ bool MiniShell::getCommand(){
 	return true;
 }
 
-/*void MiniShell::execCommand(){
-	int execPid = fork();
-	if (execPid == 0){
-		struct sigaction sa;
-		sa.sa_handler = pipeExec;
-		//int temp = sigemptyset(&sa.sa_mask);
-		sa.sa_flags = 0;
-		sigaction(SIGINT, &sa, NULL);
-			
-		inputW[argn] = NULL;
-		pid_t pid = fork();
-
-		int responsePid;
-
-		if(pid < 0)
-			write(STDOUT_FILENO,"failed to create child\n",23);
-		else if(pid == 0){
-
-			responsePid = execvp(inputW[0],inputW);
-			if(responsePid < 0)
-				write(STDOUT_FILENO,"a\n",2);
-		}
-		else {
-			wait(NULL);
-		}
-	}
-	wait(NULL);
-}*/
-
-
-
 void MiniShell::execCommand(){
 	int execPid = fork();
 	if(execPid < 0)
-		cerr<<"failed to create a child"<<endl;
+		write(STDOUT_FILENO,"failed to create a child\n", 26 );
 	else if(execPid == 0){
 		struct sigaction sa;
 		sa.sa_handler = childSignalManager;
@@ -159,7 +128,7 @@ void MiniShell::execCommand(){
 					if(pipe(fd[(activePipe+1)%2]) == -1)cout<<"ERROR EN SEGUND PIPE"<<endl;
 					int pidPipe = fork();
 					if(pidPipe < 0)
-						cerr<<"failed to create a child"<<endl;
+						write(STDOUT_FILENO,"failed to create a child\n", 26 );
 					else if(pidPipe == 0){//child
 						dup2(fd[activePipe][0], STDIN_FILENO);
 						close(fd[activePipe][0]);
@@ -170,7 +139,7 @@ void MiniShell::execCommand(){
 						args[argCount] = NULL;
 						cout<<"\0";
 						if(execvp(args[0],args) < 0){
-							if(errno == ENOENT)cerr<<"El comando no existe"<<endl;
+							if(errno == ENOENT)write(STDOUT_FILENO, "El comando no existe\n",22);
 							else cerr<<strerror(errno)<<endl;
 							exit(1);
 						}
@@ -182,17 +151,17 @@ void MiniShell::execCommand(){
 					argCount = 0;
 				}
 				else {
-					if(pipe(fd[activePipe]) == -1)cerr<<"error en pipe"<<endl;
+					if(pipe(fd[activePipe]) == -1)write(STDOUT_FILENO,"Error en el pipe\n", 17);
 					int pidPipe = fork();
 					if(pidPipe < 0)
-						cerr<<"failed to create a child"<<endl;
+						write(STDOUT_FILENO,"failed to create a child\n", 26 );
 					if(pidPipe == 0){//child
 						dup2(fd[activePipe][1], STDOUT_FILENO);
 						close(fd[activePipe][0]);
 						close(fd[activePipe][1]);
 						args[argCount] = NULL;
 						if(execvp(args[0],args) < 0){
-							if(errno == ENOENT)cerr<<"El comando no existe"<<endl;
+							if(errno == ENOENT)write(STDOUT_FILENO, "El comando no existe\n",22);
 							else cerr<<strerror(errno)<<endl;
 							exit(1);
 						}
