@@ -5,7 +5,7 @@ using namespace std;
 #define clear_c() printf("\033[H\033[J") 
 
 
-void pipeExec(int sigID){
+void childSignalManager(int sigID){
 	exit(1);
 }
 
@@ -146,7 +146,7 @@ void MiniShell::execCommand(){
 		cerr<<"failed to create a child"<<endl;
 	else if(execPid == 0){
 		struct sigaction sa;
-		sa.sa_handler = pipeExec;
+		sa.sa_handler = childSignalManager;
 		//int temp = sigemptyset(&sa.sa_mask);
 		sa.sa_flags = 0;
 		sigaction(SIGINT, &sa, NULL);
