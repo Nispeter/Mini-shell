@@ -99,7 +99,7 @@ bool MiniShell::getCommand(){
 
 			log << "comando" << "\t" << "tuser" << "\t" << "tsys" << "\t" << "maxrss" << endl;
 			log.close();
-		} else {
+		} else if (strcmp(inputW[1], "stop") == 0) {
 			uso = false;
 		}
 
